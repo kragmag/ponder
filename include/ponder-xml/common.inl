@@ -53,12 +53,12 @@ void serialize(const UserObject& object, typename Proxy::NodeType node, const Va
         if (!Proxy::isValid(child))
             continue;
 
-        if (property.type() == userType)
+        if (property.type() == ponder::ValueType::User)
         {
             // The current property is a composed type: serialize it recursively
             serialize<Proxy>(property.get(object).to<UserObject>(), child, exclude);
         }
-        else if (property.type() == arrayType)
+        else if (property.type() == ponder::ValueType::Array)
         {
             // The current property is an array
             const ArrayProperty& arrayProperty = static_cast<const ArrayProperty&>(property);
@@ -71,7 +71,7 @@ void serialize(const UserObject& object, typename Proxy::NodeType node, const Va
                 typename Proxy::NodeType item = Proxy::addChild(child, "item");
                 if (Proxy::isValid(item))
                 {
-                    if (arrayProperty.elementType() == userType)
+                    if (arrayProperty.elementType() == ponder::ValueType::User)
                     {
                         // The array elements are composed objects: serialize them recursively
                         serialize<Proxy>(arrayProperty.get(object, j).to<UserObject>(), item, exclude);
@@ -110,12 +110,12 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
         if (!Proxy::isValid(child))
             continue;
 
-        if (property.type() == userType)
+        if (property.type() == ponder::ValueType::User)
         {
             // The current property is a composed type: deserialize it recursively
             deserialize<Proxy>(property.get(object).to<UserObject>(), child, exclude);
         }
-        else if (property.type() == arrayType)
+        else if (property.type() == ponder::ValueType::Array)
         {
             // The current property is an array
             const ArrayProperty& arrayProperty = static_cast<const ArrayProperty&>(property);
@@ -136,7 +136,7 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
                         break;
                 }
 
-                if (arrayProperty.elementType() == userType)
+                if (arrayProperty.elementType() == ponder::ValueType::User)
                 {
                     // The array elements are composed objects: deserialize them recursively
                     deserialize<Proxy>(arrayProperty.get(object, index).to<UserObject>(), item, exclude);

@@ -53,6 +53,11 @@ void serialize(const UserObject& object, typename Proxy::NodeType node, const Va
         if (!Proxy::isValid(child))
             continue;
 
+        // Don't save read only properties
+        if (!property.writable(object))
+            continue;
+            
+
         if (property.type() == ponder::ValueType::User)
         {
             // The current property is a composed type: serialize it recursively
@@ -104,6 +109,11 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
         // If the property has the exclude tag, ignore it
         if ((exclude != Value::nothing) && property.hasTag(exclude))
             continue;
+        
+        // Don't load read only properties
+        if (!property.writable(object))
+            continue;
+
 
         // Find the child node corresponding to the new property
         typename Proxy::NodeType child = Proxy::findFirstChild(node, property.name());

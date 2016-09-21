@@ -56,6 +56,10 @@ namespace ponder
                 
                 static void setText(NodeType node, const std::string& text)
                 {
+                    if (text.empty())
+                    {
+                        return;
+                    }
                     auto textElement = node->GetDocument()->NewText(text.c_str());
                     node->InsertEndChild(textElement);
                 }
@@ -72,7 +76,12 @@ namespace ponder
                 
                 static std::string getText(NodeType node)
                 {
-                    return node->GetText();
+                    auto text = node->GetText();
+                    if (text == nullptr)
+                    {
+                        return std::string();
+                    }
+                    return text;
                 }
                 
                 static bool isValid(NodeType node)

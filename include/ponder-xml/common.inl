@@ -47,6 +47,16 @@ void serialize(const UserObject& object, typename Proxy::NodeType node, const Va
         // If the property has the exclude tag, ignore it
         if ((exclude != Value::nothing) && property.hasTag(exclude))
             continue;
+            
+        auto& defaultValue = property.tag("defaultValue");
+        if (defaultValue != Value::nothing)
+        {
+            auto currentValue = property.get(object);
+            if (defaultValue == currentValue)
+            {
+                continue;
+            }            
+        }
 
         // Create a child node for the new property
         typename Proxy::NodeType child = Proxy::addChild(node, property.name());
@@ -113,8 +123,7 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
         // Don't load read only properties
         if (!property.writable(object))
             continue;
-
-
+            
         // Find the child node corresponding to the new property
         typename Proxy::NodeType child = Proxy::findFirstChild(node, property.name());
         if (!Proxy::isValid(child))
@@ -162,8 +171,19 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
         }
         else
         {
+            std::string text = Proxy::getText(child);
+            if (text.empty())
+            {
+                auto& defaultValue = property.tag("defaultValue");
+                if (defaultValue != Value::nothing)
+                {
+                    property.set(object, defaultValue);
+                    continue;
+                }
+            }
+
             // The current property is a simple property: read its value from the node's text
-            property.set(object, Proxy::getText(child));
+            property.set(object, text);
         }
     }
 }

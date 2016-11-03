@@ -81,11 +81,7 @@ bool conv(const String& from, char& to)
 
 bool conv(const String& from, unsigned char& to)
 {
-    char r;
-    if (!conv(from,r))
-        return false;
-    to = r;
-    return true;
+    return parse_integer(from, to);
 }
 
 bool conv(const String& from, short& to)

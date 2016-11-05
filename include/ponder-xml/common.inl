@@ -127,7 +127,14 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
         // Find the child node corresponding to the new property
         typename Proxy::NodeType child = Proxy::findFirstChild(node, property.name());
         if (!Proxy::isValid(child))
+        {
+            if (property.hasTag("defaultValue"))
+            {
+                auto& defaultValue = property.tag("defaultValue");
+                property.set(object, defaultValue);
+            }
             continue;
+        }
 
         if (property.type() == ponder::ValueType::User)
         {
@@ -172,14 +179,11 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
         else
         {
             std::string text = Proxy::getText(child);
-            if (text.empty())
+            if (text.empty() && property.hasTag("defaultValue"))
             {
                 auto& defaultValue = property.tag("defaultValue");
-                if (defaultValue != Value::nothing)
-                {
-                    property.set(object, defaultValue);
-                    continue;
-                }
+                property.set(object, defaultValue);
+                continue;
             }
 
             // The current property is a simple property: read its value from the node's text

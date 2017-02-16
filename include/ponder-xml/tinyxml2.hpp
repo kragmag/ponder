@@ -112,9 +112,9 @@ namespace ponder
          * \param node Parent for the generated XML nodes
          * \param exclude Tag to exclude from the serialization process
          */
-        inline void serialize(const UserObject& object, tinyxml2::XMLElement* node, const Value& exclude = Value::nothing)
+        inline void serialize(const UserObject& object, tinyxml2::XMLElement* node, const Value& exclude = Value::nothing, const UserObject* parentObject = nullptr)
         {
-            detail::serialize<detail::TinyXml2>(object, node, exclude);
+            detail::serialize<detail::TinyXml2>(object, node, exclude, parentObject);
         }
         
         /**
@@ -134,9 +134,9 @@ namespace ponder
          * \param node XML node to parse
          * \param exclude Tag to exclude from the deserialization process
          */
-        inline void deserialize(const UserObject& object, tinyxml2::XMLElement* node, const Value& exclude = Value::nothing)
+        inline void deserialize(const UserObject& object, tinyxml2::XMLElement* node, const Value& exclude = Value::nothing, const UserObject* parentObject = nullptr)
         {
-            detail::deserialize<detail::TinyXml2>(object, node, exclude);
+            detail::deserialize<detail::TinyXml2>(object, node, exclude, parentObject);
         }
         
     } // namespace xml

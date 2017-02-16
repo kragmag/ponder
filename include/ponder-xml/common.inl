@@ -36,10 +36,15 @@ namespace xml
 namespace detail
 {
 template <typename Proxy>
-void serialize(const UserObject& object, typename Proxy::NodeType node, const Value& exclude)
+void serialize(const UserObject& object, typename Proxy::NodeType node, const Value& exclude, const UserObject* parentObject)
 {
     // Iterate over the object's properties using its metaclass
     const Class& metaclass = object.getClass();
+    const Class* parentMetaClass = nullptr;
+    if (parentObject != nullptr)
+    {
+        parentMetaClass = &parentObject->getClass();
+    }
     for (std::size_t i = 0; i < metaclass.propertyCount(); ++i)
     {
         const Property& property = metaclass.property(i);
@@ -47,15 +52,34 @@ void serialize(const UserObject& object, typename Proxy::NodeType node, const Va
         // If the property has the exclude tag, ignore it
         if ((exclude != Value::nothing) && property.hasTag(exclude))
             continue;
-            
+
+
+        Value currentValue;
+        if (property.type() != ponder::ValueType::Array)
+        {
+            // Arrays can't store the current value because they would try to access the first element which crashes for empty arrays
+            // Arrays don't use the currentValue object
+            currentValue = property.get(object);
+        }
+
         auto& defaultValue = property.tag("defaultValue");
         if (defaultValue != Value::nothing)
         {
-            auto currentValue = property.get(object);
             if (defaultValue == currentValue)
             {
                 continue;
             }            
+        }
+
+        Value parentValue;
+        if (parentMetaClass != nullptr && parentMetaClass->hasProperty(property.name()))
+        {
+            parentValue = property.get(*parentObject);
+            if (parentValue == currentValue)
+            {
+                // Value is the same as parent value -> don't save it
+                continue;
+            }
         }
 
         // Create a child node for the new property
@@ -71,7 +95,15 @@ void serialize(const UserObject& object, typename Proxy::NodeType node, const Va
         if (property.type() == ponder::ValueType::User)
         {
             // The current property is a composed type: serialize it recursively
-            serialize<Proxy>(property.get(object).to<UserObject>(), child, exclude);
+            if (parentMetaClass != nullptr)
+            {
+                UserObject parentValueObject = parentValue.to<UserObject>();
+                serialize<Proxy>(currentValue.to<UserObject>(), child, exclude, &parentValueObject);
+            }
+            else
+            {
+                serialize<Proxy>(currentValue.to<UserObject>(), child, exclude, nullptr);
+            }
         }
         else if (property.type() == ponder::ValueType::Array)
         {
@@ -102,16 +134,22 @@ void serialize(const UserObject& object, typename Proxy::NodeType node, const Va
         else
         {
             // The current property is a simple property: write its value as the node's text
-            Proxy::setText(child, property.get(object));
+            Proxy::setText(child, currentValue);
         }
     }
 }
 
 template <typename Proxy>
-void deserialize(const UserObject& object, typename Proxy::NodeType node, const Value& exclude)
+void deserialize(const UserObject& object, typename Proxy::NodeType node, const Value& exclude, const UserObject* parentObject)
 {
     // Iterate over the object's properties using its metaclass
     const Class& metaclass = object.getClass();
+    const Class* parentMetaClass = nullptr;
+    if (parentObject != nullptr)
+    {
+        parentMetaClass = &parentObject->getClass();
+    }
+
     for (std::size_t i = 0; i < metaclass.propertyCount(); ++i)
     {
         const Property& property = metaclass.property(i);
@@ -123,12 +161,22 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
         // Don't load read only properties
         if (!property.writable(object))
             continue;
-            
+
+        Value parentValue;
+        if (parentMetaClass != nullptr && parentMetaClass->hasProperty(property.name()))
+        {
+            parentValue = property.get(*parentObject);
+        }
+
         // Find the child node corresponding to the new property
         typename Proxy::NodeType child = Proxy::findFirstChild(node, property.name());
         if (!Proxy::isValid(child))
         {
-            if (property.hasTag("defaultValue"))
+            if (parentMetaClass != nullptr && parentMetaClass->hasProperty(property.name()))
+            {
+                property.set(object, parentValue);
+            }
+            else if (property.hasTag("defaultValue"))
             {
                 auto& defaultValue = property.tag("defaultValue");
                 property.set(object, defaultValue);
@@ -139,7 +187,18 @@ void deserialize(const UserObject& object, typename Proxy::NodeType node, const 
         if (property.type() == ponder::ValueType::User)
         {
             // The current property is a composed type: deserialize it recursively
-            deserialize<Proxy>(property.get(object).to<UserObject>(), child, exclude);
+            if (parentMetaClass != nullptr && parentMetaClass->hasProperty(property.name()))
+            {
+                UserObject parentValueObject;
+                parentValueObject = parentValue.to<UserObject>();
+                deserialize<Proxy>(property.get(object).to<UserObject>(), child, exclude, &parentValueObject);
+            }
+            else
+            {
+                deserialize<Proxy>(property.get(object).to<UserObject>(), child, exclude);
+            }
+
+
         }
         else if (property.type() == ponder::ValueType::Array)
         {

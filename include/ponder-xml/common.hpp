@@ -58,7 +58,7 @@ namespace detail
  * \param exclude Tag to exclude from the serialization process
  */
 template <typename Proxy>
-void serialize(const UserObject& object, typename Proxy::NodeType node, const Value& exclude);
+void serialize(const UserObject& object, typename Proxy::NodeType node, const Value& exclude, const UserObject* parentObject = nullptr);
 
 /**
  * \brief Deserialize a CAMP object from XML elements
@@ -75,7 +75,7 @@ void serialize(const UserObject& object, typename Proxy::NodeType node, const Va
  * \param exclude Tag to exclude from the deserialization process
  */
 template <typename Proxy>
-void deserialize(const UserObject& object, typename Proxy::NodeType node, const Value& exclude);
+void deserialize(const UserObject& object, typename Proxy::NodeType node, const Value& exclude, const UserObject* parentObject = nullptr);
 
 } // namespace detail
 
